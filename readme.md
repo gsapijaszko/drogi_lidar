@@ -16,31 +16,31 @@ Oborniki Śląskie municipality, Poland.
 <summary>Code</summary>
 
 ``` r
-if (!dir.exists("../data")) {
-  dir.create("../data")
+if (!dir.exists("data")) {
+  dir.create("data")
 }
 
 options(timeout = 60*20)
-if(!file.exists("../data/zajaczkow.csv")) {
+if(!file.exists("data/zajaczkow.csv")) {
   a <- osmdata::getbb("Zajączków, trzebnicki", format_out = "sf_polygon") |>
     sf::st_centroid() |>
     sf::st_buffer(dist = 500) |>
     rgugik::DEM_request()
   
-  write.csv(a, file = "../data/zajaczkow.csv")
+  write.csv(a, file = "data/zajaczkow.csv")
 } else {
-  a <- read.csv(file = "../data/zajaczkow.csv")
+  a <- read.csv(file = "data/zajaczkow.csv")
 }
 
 a |>
   subset(product == "PointCloud" & year == "2022" & resolution == "12 p/m2") |>
-  rgugik::tile_download(outdir = "../data", 
+  rgugik::tile_download(outdir = "data", 
                           method = "wget", 
                           extra = "--no-check-certificate -c --progress=bar:force")
 
 rm(a)
 
-f <- list.files(path = "../data", pattern = "laz", full.names = TRUE)
+f <- list.files(path = "data", pattern = "laz", full.names = TRUE)
 
 convertLAZ <- function(lazfile, outdir = ".", filter = "-keep_class 2 9", crs = "EPSG:2180") {
   if(!dir.exists(outdir)) { dir.create(outdir, recursive = TRUE)}
@@ -59,18 +59,18 @@ convertLAZ <- function(lazfile, outdir = ".", filter = "-keep_class 2 9", crs = 
   }
 }
 
-lapply(f, convertLAZ, filter = "", outdir = "../data")
+lapply(f, convertLAZ, filter = "", outdir = "data")
 rm(f)
 rm("convertLAZ", envir = .GlobalEnv)
 
-if(!file.exists("../data/zajaczkow.gpkg")) {
+if(!file.exists("data/zajaczkow.gpkg")) {
   b <- osmdata::getbb("Zajączków, trzebnicki") |>
     osmdata::opq() |>
     osmdata::add_osm_features(features = c("\"boundary\"" = "\"administrative\"", 
                                            "\"highway\"")) |>
     osmdata::osmdata_sf()
   
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   l_ext <- lidR::ext(l)  |>
     terra::as.polygons() |>
@@ -86,21 +86,21 @@ if(!file.exists("../data/zajaczkow.gpkg")) {
   
   h <- sf::st_intersection(h, l_ext)
   
-  sf::write_sf(h, "../data/zajaczkow.gpkg", append = FALSE)
+  sf::write_sf(h, "data/zajaczkow.gpkg", append = FALSE)
   
 }
 
-if (!file.exists("../data/r.tif")) {
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+if (!file.exists("data/r.tif")) {
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   r <- lidR::rasterize_terrain(l, res = 0.2)
-  terra::writeRaster(r, "../data/r.tif", overwrite = TRUE)
+  terra::writeRaster(r, "data/r.tif", overwrite = TRUE)
 } 
 
 ## orthofoto
 
-if(!file.exists("../data/76501_1076083_M-33-34-B-d-1-4.tif")) {
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+if(!file.exists("data/76501_1076083_M-33-34-B-d-1-4.tif")) {
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   l_ext <- lidR::ext(l)  |>
     terra::as.polygons() |>
@@ -112,15 +112,15 @@ if(!file.exists("../data/76501_1076083_M-33-34-B-d-1-4.tif")) {
   
   a |>
     subset(year == "2022" & grepl("B-d-1-4", filename)) |>
-    rgugik::tile_download(outdir = "../data", 
+    rgugik::tile_download(outdir = "data", 
                           method = "wget", 
                           extra = "--no-check-certificate -c --progress=bar:force")
 }
 
-l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
-r <- terra::rast("../data/r.tif")
-ortho <- terra::rast("../data/76501_1076083_M-33-34-B-d-1-4.tif")
-h <- sf::read_sf("../data/zajaczkow.gpkg")
+l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+r <- terra::rast("data/r.tif")
+ortho <- terra::rast("data/76501_1076083_M-33-34-B-d-1-4.tif")
+h <- sf::read_sf("data/zajaczkow.gpkg")
 ```
 
 </details>
@@ -171,7 +171,7 @@ terra::plot(vertices$geometry, col = "red", pch = 20, add = TRUE)
 
 <div id="fig-owerview">
 
-![](manuscript/manuscript_files/figure-commonmark/fig-owerview-1.png)
+![](readme_files/figure-commonmark/fig-owerview-1.png)
 
 Figure 1: Orthophoto view of the road with vertices added (shown in
 red).
@@ -255,7 +255,7 @@ plot(line, lty = 3, col = "green", add = TRUE)
 
 <div id="fig-transect_overviev">
 
-![](manuscript/manuscript_files/figure-commonmark/fig-transect_overviev-1.png)
+![](readme_files/figure-commonmark/fig-transect_overviev-1.png)
 
 Figure 2: Analized area of the road: <span style="color:red;">red
 point</span> – middle of the linestring, green line – perpendicular line
@@ -269,8 +269,8 @@ Let’s see how LIDAR data looks like in the analyzed area.
 <summary>Code</summary>
 
 ``` r
-###| layout-ncol: 2
-###| column: body-outset
+##| layout-ncol: 2
+##| column: body-outset
 
 x <- lidR::clip_transect(l, c(xm1, ym1), c(xm2, ym2), width = 6, xz = TRUE)
 x <- lidR::filter_poi(x, Classification != 12L)
@@ -328,7 +328,7 @@ ggplot(x@data, aes(X, Y, color = factor(Classification))) +
 
 <div id="fig-transect_lidar-1">
 
-<img src="manuscript/manuscript_files/figure-commonmark/fig-transect_lidar-1.png"
+<img src="readme_files/figure-commonmark/fig-transect_lidar-1.png"
 data-ref-parent="fig-transect_lidar" />
 
 (a) points height
@@ -341,7 +341,7 @@ data-ref-parent="fig-transect_lidar" />
 
 <div id="fig-transect_lidar-2">
 
-<img src="manuscript/manuscript_files/figure-commonmark/fig-transect_lidar-2.png"
+<img src="readme_files/figure-commonmark/fig-transect_lidar-2.png"
 data-ref-parent="fig-transect_lidar" />
 
 (b) points classification
@@ -354,7 +354,7 @@ data-ref-parent="fig-transect_lidar" />
 
 <div id="fig-transect_lidar-3">
 
-<img src="manuscript/manuscript_files/figure-commonmark/fig-transect_lidar-3.png"
+<img src="readme_files/figure-commonmark/fig-transect_lidar-3.png"
 data-ref-parent="fig-transect_lidar" />
 
 (c) points intensity
@@ -367,7 +367,7 @@ data-ref-parent="fig-transect_lidar" />
 
 <div id="fig-transect_lidar-4">
 
-<img src="manuscript/manuscript_files/figure-commonmark/fig-transect_lidar-4.png"
+<img src="readme_files/figure-commonmark/fig-transect_lidar-4.png"
 data-ref-parent="fig-transect_lidar" />
 
 (d) X-Y view of LIDAR points by classification
@@ -390,8 +390,8 @@ linestring mid point.
 <summary>Code</summary>
 
 ``` r
-###| layout-ncol: 2
-###| column: body-outset
+##| layout-ncol: 2
+##| column: body-outset
 
 y <- x |>
   lidR::filter_poi(Classification %in% c(2L, 3L))
@@ -422,8 +422,7 @@ ggplot(y@data, aes(X, Y, color = Intensity)) +
 
 <div id="fig-transect_centered-1">
 
-<img
-src="manuscript/manuscript_files/figure-commonmark/fig-transect_centered-1.png"
+<img src="readme_files/figure-commonmark/fig-transect_centered-1.png"
 data-ref-parent="fig-transect_centered" />
 
 (a) points height with intensity
@@ -436,8 +435,7 @@ data-ref-parent="fig-transect_centered" />
 
 <div id="fig-transect_centered-2">
 
-<img
-src="manuscript/manuscript_files/figure-commonmark/fig-transect_centered-2.png"
+<img src="readme_files/figure-commonmark/fig-transect_centered-2.png"
 data-ref-parent="fig-transect_centered" />
 
 (b) X-Y view of points intensity
@@ -521,8 +519,20 @@ h_width <- abs(h_min) + abs(h_max)
 
 <div id="tbl-calculated_data">
 
-Table 1: Mean intensity (Im) and height (Zm) of (un)classified strips
-across transects. S – distance from mid point.
+Table 1: Subset of mean intensity (Im) and height (Zm) of (un)classified
+strips across transects. s – distance from mid point.
+
+<details class="code-fold">
+<summary>Code</summary>
+
+``` r
+df |> 
+  subset(s >= (h_min - 0.3) & s <= (h_max + 0.3)) |>
+  kableExtra::kable(align = c("r", "r", "r", "r")) |>
+  kableExtra::kable_classic_2()  
+```
+
+</details>
 
 </div>
 
@@ -550,7 +560,7 @@ ggplot(y@data, aes(X, Y, color = Intensity)) +
 
 <div id="fig-road_calc">
 
-![](manuscript/manuscript_files/figure-commonmark/fig-road_calc-1.png)
+![](readme_files/figure-commonmark/fig-road_calc-1.png)
 
 Figure 5: LIDAR data plots with road boundaries marked
 

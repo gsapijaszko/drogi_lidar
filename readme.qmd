@@ -2,15 +2,15 @@
 title: "Highways width based on LIDAR data"
 author: "Grzegorz Sapijaszko"
 format: 
-  html:
-    theme: cosmo
-#    css: styles.css
-    number-depth: 3
-    toc-depth: 4
-    link-external-newwindow: true
-    grid:
-      margin-width: 350px
-      body-width: 750px
+#   html:
+#     theme: cosmo
+# #    css: styles.css
+#     number-depth: 3
+#     toc-depth: 4
+#     link-external-newwindow: true
+#     grid:
+#       margin-width: 350px
+#       body-width: 750px
   gfm:
     toc: false
     output-file: readme.md
@@ -39,31 +39,31 @@ The example based on tertiary road between Zajączków and Kotowice, Oborniki Ś
 #| output: false
 #| warning: false
 
-if (!dir.exists("../data")) {
-  dir.create("../data")
+if (!dir.exists("data")) {
+  dir.create("data")
 }
 
 options(timeout = 60*20)
-if(!file.exists("../data/zajaczkow.csv")) {
+if(!file.exists("data/zajaczkow.csv")) {
   a <- osmdata::getbb("Zajączków, trzebnicki", format_out = "sf_polygon") |>
     sf::st_centroid() |>
     sf::st_buffer(dist = 500) |>
     rgugik::DEM_request()
   
-  write.csv(a, file = "../data/zajaczkow.csv")
+  write.csv(a, file = "data/zajaczkow.csv")
 } else {
-  a <- read.csv(file = "../data/zajaczkow.csv")
+  a <- read.csv(file = "data/zajaczkow.csv")
 }
 
 a |>
   subset(product == "PointCloud" & year == "2022" & resolution == "12 p/m2") |>
-  rgugik::tile_download(outdir = "../data", 
+  rgugik::tile_download(outdir = "data", 
                           method = "wget", 
                           extra = "--no-check-certificate -c --progress=bar:force")
 
 rm(a)
 
-f <- list.files(path = "../data", pattern = "laz", full.names = TRUE)
+f <- list.files(path = "data", pattern = "laz", full.names = TRUE)
 
 convertLAZ <- function(lazfile, outdir = ".", filter = "-keep_class 2 9", crs = "EPSG:2180") {
   if(!dir.exists(outdir)) { dir.create(outdir, recursive = TRUE)}
@@ -82,18 +82,18 @@ convertLAZ <- function(lazfile, outdir = ".", filter = "-keep_class 2 9", crs = 
   }
 }
 
-lapply(f, convertLAZ, filter = "", outdir = "../data")
+lapply(f, convertLAZ, filter = "", outdir = "data")
 rm(f)
 rm("convertLAZ", envir = .GlobalEnv)
 
-if(!file.exists("../data/zajaczkow.gpkg")) {
+if(!file.exists("data/zajaczkow.gpkg")) {
   b <- osmdata::getbb("Zajączków, trzebnicki") |>
     osmdata::opq() |>
     osmdata::add_osm_features(features = c("\"boundary\"" = "\"administrative\"", 
                                            "\"highway\"")) |>
     osmdata::osmdata_sf()
   
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   l_ext <- lidR::ext(l)  |>
     terra::as.polygons() |>
@@ -109,21 +109,21 @@ if(!file.exists("../data/zajaczkow.gpkg")) {
   
   h <- sf::st_intersection(h, l_ext)
   
-  sf::write_sf(h, "../data/zajaczkow.gpkg", append = FALSE)
+  sf::write_sf(h, "data/zajaczkow.gpkg", append = FALSE)
   
 }
 
-if (!file.exists("../data/r.tif")) {
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+if (!file.exists("data/r.tif")) {
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   r <- lidR::rasterize_terrain(l, res = 0.2)
-  terra::writeRaster(r, "../data/r.tif", overwrite = TRUE)
+  terra::writeRaster(r, "data/r.tif", overwrite = TRUE)
 } 
 
 ## orthofoto
 
-if(!file.exists("../data/76501_1076083_M-33-34-B-d-1-4.tif")) {
-  l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+if(!file.exists("data/76501_1076083_M-33-34-B-d-1-4.tif")) {
+  l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
   
   l_ext <- lidR::ext(l)  |>
     terra::as.polygons() |>
@@ -135,15 +135,15 @@ if(!file.exists("../data/76501_1076083_M-33-34-B-d-1-4.tif")) {
   
   a |>
     subset(year == "2022" & grepl("B-d-1-4", filename)) |>
-    rgugik::tile_download(outdir = "../data", 
+    rgugik::tile_download(outdir = "data", 
                           method = "wget", 
                           extra = "--no-check-certificate -c --progress=bar:force")
 }
 
-l <- lidR::readLAS("../data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
-r <- terra::rast("../data/r.tif")
-ortho <- terra::rast("../data/76501_1076083_M-33-34-B-d-1-4.tif")
-h <- sf::read_sf("../data/zajaczkow.gpkg")
+l <- lidR::readLAS("data/76503_1213480_M-33-34-B-d-1-4-2-2.las")
+r <- terra::rast("data/r.tif")
+ortho <- terra::rast("data/76501_1076083_M-33-34-B-d-1-4.tif")
+h <- sf::read_sf("data/zajaczkow.gpkg")
 ```
 
 The road consists of several linestrings, let's combine them together to have one longer `LINESTRING`.
@@ -278,8 +278,8 @@ Let's see how LIDAR data looks like in the analyzed area.
 #|    - "points classification"
 #|    - "points intensity"
 #|    - "X-Y view of LIDAR points by classification"
-#| layout-ncol: 2
-#| column: body-outset
+##| layout-ncol: 2
+##| column: body-outset
 
 x <- lidR::clip_transect(l, c(xm1, ym1), c(xm2, ym2), width = 6, xz = TRUE)
 x <- lidR::filter_poi(x, Classification != 12L)
@@ -340,8 +340,8 @@ The points data contains several classes: ground points, low, middle and high ve
 #| fig-subcap: 
 #|    - "points height with intensity"
 #|    - "X-Y view of points intensity"
-#| layout-ncol: 2
-#| column: body-outset
+##| layout-ncol: 2
+##| column: body-outset
 
 y <- x |>
   lidR::filter_poi(Classification %in% c(2L, 3L))
@@ -421,11 +421,12 @@ h_width <- abs(h_min) + abs(h_max)
 ```
 ```{r}
 #| label: tbl-calculated_data
-#| echo: false
-#| tbl-cap: "Mean intensity (Im) and height (Zm) of (un)classified strips across transects. S -- distance from mid point."
 #| output: false
+#| code-fold: true
+#| tbl-cap: "Subset of mean intensity (Im) and height (Zm) of (un)classified strips across transects. s -- distance from mid point."
 
 df |> 
+  subset(s >= (h_min - 0.3) & s <= (h_max + 0.3)) |>
   kableExtra::kable(align = c("r", "r", "r", "r")) |>
   kableExtra::kable_classic_2()  
 

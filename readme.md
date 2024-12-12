@@ -1,4 +1,4 @@
-# Highways width
+# Highways width based on LIDAR data
 Grzegorz Sapijaszko
 
 ## The purpose

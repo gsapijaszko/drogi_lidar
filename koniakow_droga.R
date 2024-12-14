@@ -24,7 +24,7 @@ if(!file.exists(dtmcsv)) {
 
 a |>
   subset(product == "PointCloud" & year == "2021" & resolution == "4 p/m2") |>
-  rgugik::tile_download(outdir = "data", method = "wget", extra = "-c")
+  rgugik::tile_download(outdir = "data", method = "wget", extra = "--no-check-certificate -c --progress=bar:force")
 rm(a)
 
 f <- list.files(path = "data", pattern = "laz", full.names = TRUE)
@@ -53,7 +53,6 @@ rm("convertLAZ", envir = .GlobalEnv)
 # ALS frame selection ---------------------------------------------------------
 pliklaz = "data/75089_1118671_M-34-86-B-d-3-1-3.laz"
 pliklas = "data/75089_1118671_M-34-86-B-d-3-1-3.las"
-
 
 if(!file.exists(geometrieosm)) {
   b <- osmdata::getbb(miejsce) |>
@@ -95,7 +94,8 @@ x <- lidR::plot(l, bg = "white", size = 3)
 lidR::add_dtm3d(x, r)
 
 ## orthofoto
-plikorto = "data/79044_1300905_M-34-86-B-d-3-1.tif"
+# plikorto = "data/79044_1300905_M-34-86-B-d-3-1.tif"
+plikorto = "data/79045_1297829_M-34-86-B-d-3-1.tif"
 
 if(!file.exists(plikorto)) {
   l <- lidR::readLAS(pliklas)
@@ -107,24 +107,28 @@ if(!file.exists(plikorto)) {
   sf::st_crs(l_ext) <- lidR::crs(l)
   
   a <- rgugik::ortho_request(l_ext)
-  
   a |>
-    subset(year == "2023" & grepl("B-d-3-1", filename)) |>
-    rgugik::tile_download(, outdir = "data", method = "wget", extra = "-c")
+    subset(year == "2023" & grepl("B-d-3-1", filename) & composition == "RGB") |>
+    rgugik::tile_download(, outdir = "data", method = "wget", extra = "--no-check-certificate -c --progress=bar:force")
 }
 
 # read data -----------------------------------------------------------------------------------
 
 l <- lidR::readLAS(pliklas)
-r <- terra::rast("data/r.tif")
+# r <- terra::rast("data/r.tif")
 ortho <- terra::rast(plikorto)
 h <- sf::read_sf(geometrieosm)
 
 h <- h |>
-  subset(highway == "residential")  |>
-  sf::st_cast(to = "MULTIPOINT") |>
-  sf::st_union() |>
+  subset(highway == "residential")  
+  #|>
+  # sf::st_cast(to = "MULTIPOINT") |>
+  # sf::st_union() |>
+  # sf::st_cast(to = "LINESTRING")
+
+h <- h[1, ] |>
   sf::st_cast(to = "LINESTRING")
+
 
 m <- sf::st_bbox(h)
 dx <- as.integer(m["xmax"] - m["xmin"])
@@ -145,28 +149,28 @@ terra::plotRGB(ortho,
 
 terra::plot(h, col = "red", add = TRUE)
 
-plot(sf::st_geometry(h), axes = TRUE)
+# plot(sf::st_geometry(h), axes = TRUE)
  
-sample_points <- sf::st_line_sample(h, density = 0.01, type = "regular") |>
-   sf::st_cast(to = "POINT")
+# sample_points <- sf::st_line_sample(h, density = 0.01, type = "regular") |>
+#    sf::st_cast(to = "POINT")
+# # 
+# sample_points |>
+#   plot(add = TRUE)
 # 
-sample_points |>
-  plot(add = TRUE)
+# terrain <- terra::terrain(r, v = c("slope", "aspect", "TPI", "TRI", "roughness", "flowdir"), unit = "radians")
+# terra::plot(terrain$roughness, xlim = c(355600, 355700), ylim = c(375150, 375250))
+# terra::plot(r, xlim = c(355600, 355700), ylim = c(375150, 375250))
+# terra::plot(h, add = TRUE)
+# dtm_hillshade <- terra::shade(slope = terrain$slope, aspect = terrain$aspect)
+# terra::plot(dtm_hillshade, 
+#              col = gray(0:30 / 30), 
+#             # xlim = c(355600, 355800), 
+#             # ylim = c(375150, 375350)
+#             )
+# plot(sf::st_geometry(h), add = TRUE)
+# sample_points |>
+#   plot(add = TRUE)
 # 
-terrain <- terra::terrain(r, v = c("slope", "aspect", "TPI", "TRI", "roughness", "flowdir"), unit = "radians")
-terra::plot(terrain$roughness, xlim = c(355600, 355700), ylim = c(375150, 375250))
-terra::plot(r, xlim = c(355600, 355700), ylim = c(375150, 375250))
-terra::plot(h, add = TRUE)
-dtm_hillshade <- terra::shade(slope = terrain$slope, aspect = terrain$aspect)
-terra::plot(dtm_hillshade, 
-             col = gray(0:30 / 30), 
-            # xlim = c(355600, 355800), 
-            # ylim = c(375150, 375350)
-            )
-plot(sf::st_geometry(h), add = TRUE)
-sample_points |>
-  plot(add = TRUE)
-
 # vertices ----------------------------------------------------------------------------------------------
 
 vertices <- h |>
@@ -178,7 +182,7 @@ plot(vertices$geometry, col = "red", pch = 20, add = TRUE)
 
 ## example ----
 
-v <- 120 #7
+v <- 2 #7
 
 p1 <- vertices[v, "geometry"] |>
   sf::st_coordinates()
@@ -195,15 +199,6 @@ xmin <- min(p1[1], p2[1])
 xmax <- max(p1[1], p2[1])
 ymin <- min(p1[2], p2[2])
 ymax <- max(p1[2], p2[2])
-
-terra::plotRGB(ortho,
-               xlim = c(xmin - 0.05*ll, xmax + 0.05*ll),
-               ylim = c(ymin - 0.05*ll, ymax + 0.05*ll),
-               axes = TRUE,
-               mar = c(1.5, 0, 1.0, 0))
-
-plot(sf::st_geometry(h), add = TRUE)
-plot(sf::st_geometry(vertices), pch = 20, col = "blue", add = TRUE)
 
 #' alpha in radians
 alpha <- atan(dy/dx)
@@ -229,6 +224,29 @@ line <- sf::st_sfc(line)
 
 poly <- sf::st_buffer(line, dist = 3, endCapStyle = "FLAT") |>
   sf::st_sfc(crs = "EPSG:2180")
+
+bb <- sf::st_bbox(poly)
+
+#' for short linestring, the bbox of transect polygon can be bigger than 
+#' bbox of linestring itself, therefore choosing bigger bbox of those two
+#' for plotting
+
+xmin <- min(xmin, bb["xmin"])
+xmax <- max(xmax, bb["xmax"])
+ymin <- min(ymin, bb["ymin"])
+ymax <- max(ymax, bb["ymax"])
+
+terra::plotRGB(ortho,
+               xlim = c(xmin - 0.05*ll, xmax + 0.05*ll),
+               ylim = c(ymin - 0.05*ll, ymax + 0.05*ll),
+               axes = TRUE,
+               mar = c(1.5, 0, 1.0, 0))
+
+plot(sf::st_geometry(h), add = TRUE)
+plot(sf::st_geometry(vertices), pch = 20, col = "blue", add = TRUE)
+
+
+
 plot(poly, lwd = 0.6, col = "#80808088", lty = 3, add = TRUE)
 
 plot(pm, pch = 20, col = "red", add = TRUE)
@@ -237,11 +255,16 @@ plot(pm1, pch = 16, size = 1.2, col = "green", add = TRUE)
 plot(pm2, pch = 16, size = 1.2, col = "green", add = TRUE)
 plot(line, lty = 3, col = "green", add = TRUE)
 
-sf::st_bbox(poly)
 
 x <- lidR::clip_transect(l, c(xm1, ym1), c(xm2, ym2), width = 6, xz = TRUE)
-x <- lidR::filter_poi(x, Classification != 12L)
 
+#' removing outliers
+#' 
+
+
+stats <- boxplot(x@data$Z, plot = FALSE)$stats
+
+x <- lidR::filter_poi(x, Classification != 12L, Z >= min(stats), Z <= max(stats))
 bb <- lidR::st_bbox(x)
 
 class_cols <- c(
@@ -263,7 +286,7 @@ library(ggplot2)
 
 ggplot(x@data, aes(X, Z, color = Z)) +
   geom_point(size = 0.5) +
-  #  coord_equal() +
+  coord_equal() +
   theme_minimal() +
   scale_color_gradientn(colours = lidR::height.colors(50))
 
@@ -275,7 +298,6 @@ ggplot(x@data, aes(X, Z, color = factor(Classification))) +
 
 ggplot(x@data, aes(X, Z, color = Intensity)) +
   geom_point(size = 0.5) +
-  #  ylim(114, 116) +
   coord_equal() +
   theme_minimal() +
   scale_color_gradientn(colours = lidR::height.colors(50))
@@ -294,20 +316,18 @@ y$Y <- y$Y - (bb["ymin"] + (bb["ymax"]-bb["ymin"])/2)
 
 ggplot(y@data, aes(X, Z, color = Intensity)) +
   geom_point(size = 0.5) +
-#  ylim(114, 116) +
-  #  coord_equal() +
+  coord_equal() +
   theme_minimal() +
   scale_color_gradientn(colours = lidR::height.colors(50))
 
 ggplot(y@data, aes(X, Y, color = Intensity)) +
   geom_point(size = 0.5) +
-  #  ylim(114, 116) +
   coord_equal() +
   theme_minimal() +
   scale_color_gradientn(colours = lidR::height.colors(50))
 
 aa <-  y@data |>
-  subset(X <= 0.2 & X > -0.2 & !Classification %in% c(4, 5), select = c(Z, Intensity))
+  subset(X <= 0.2 & X > -0.2, select = c(Z, Intensity))
 mean(aa$Intensity)
 sd(aa$Intensity)
 Imin <- mean(aa$Intensity) - 2 * sd(aa$Intensity)
@@ -316,37 +336,73 @@ Imax <- mean(aa$Intensity) + 2 * sd(aa$Intensity)
 Zmin <- mean(aa$Z) - 3 * sd(aa$Z)
 Zmax <- mean(aa$Z) + 3 * sd(aa$Z)
 
-
 s <- seq(-5, 5, 0.1)
 
 df_list <- vector('list', length(s)-1)
+
+#' Seems for some 10 cm wide strips there are no points in (LIDAR 4 pt/m^2) 
+#' which caused an error:
+#' 
+#' Error in if ((Imax >= meanI & meanI >= Imin) & (Zmax >=meanZ & meanZ >= Zmin))
+#'   missing value where TRUE/FALSE needed
+#'   
+#' Solution with if(nrow(aa))...
+#' 
 
 for (i in 1:(length(s)-1)) {
 #  print(i)
   aa <-  y@data |>
     subset(X >= s[i] & X < s[i+1], select = c(Z, Intensity))
-  meanI <- mean(aa$Intensity)
-  meanZ <- mean(aa$Z)
-  if((Imax >=  meanI & meanI >= Imin) &
-    (Zmax >=meanZ & meanZ >= Zmin)) {
-    df <- data.frame(
-      s = s[i],
-      Im = meanI,
-      Zm = meanZ,
-      road_surface = "yes"
-    )
+  if(nrow(aa) > 0L) {
+    meanI <- mean(aa$Intensity)
+    meanZ <- mean(aa$Z)
+    if((Imax >=  meanI & meanI >= Imin) &
+       (Zmax >=meanZ & meanZ >= Zmin)) {
+      df <- data.frame(
+        s = s[i],
+        Im = meanI,
+        Zm = meanZ,
+        road_surface = "yes"
+      )
+    } else {
+      df <- data.frame(
+        s = s[i],
+        Im = meanI,
+        Zm = meanZ,
+        road_surface = "no"
+      )
+    }
   } else {
     df <- data.frame(
       s = s[i],
-      Im = meanI,
-      Zm = meanZ,
-      road_surface = "no"
+      Im = NA,
+      Zm = NA,
+      road_surface = NA
     )
   }
   df_list[[i]] <- df
 }
 df <- do.call('rbind', df_list)
-df
+# df
+
+#' cleaning:
+#'  if there is yes, yes, NA|no, yes, yes => road_surface == yes
+#'  if there is no, no, yes|NA, no, no =>    road_surface == no
+#'  if there is no, yes, yes, yes, no =>     road_surface == no
+#'  etc?
+
+df <- df |>
+  dplyr::mutate(alag1 = dplyr::lag(road_surface, n=1, default = "no"), 
+                alag2 = dplyr::lag(road_surface, n=2, default = "no"), 
+                alead1 = dplyr::lead(road_surface, n=1, default = "no"),
+                alead2 = dplyr::lead(road_surface, n=2, default = "no"),
+                road_surface = ifelse((is.na(road_surface) | road_surface == "no") & alag1 == "yes" & alag2 == "yes" & alead1 == "yes" & alead2 == "yes", "yes", road_surface),
+                road_surface = ifelse((is.na(road_surface) | road_surface == "yes") & alag1 == "no" & alag2 == "no" & alead1 == "no" & alead2 == "no", "no", road_surface),
+                road_surface = ifelse(road_surface == "yes" & alag2 == "no" & alead2 == "no", "no", road_surface),
+                road_surface = ifelse(is.na(road_surface), "no", road_surface)) |>
+  subset(select = c(s, Im, Zm, road_surface))
+
+# df
 
 h_min <- min(df$s[df$road_surface == "yes"])
 h_max <- max(df$s[df$road_surface == "yes"])
@@ -354,7 +410,7 @@ h_width <- abs(h_min) + abs(h_max)
 
 abs(h_max) - (abs(h_min) + abs(h_max))/2
 
-message("Szerokość drogi = ", abs(min(df$s[df$classified == "yes"])) + abs(max(df$s[df$classified == "yes"])), " m")
+message("Szerokość drogi = ", h_width, " m")
 
 ggplot(y@data, aes(X, Y, color = Intensity)) +
   geom_point(size = 0.5) +
@@ -362,28 +418,12 @@ ggplot(y@data, aes(X, Y, color = Intensity)) +
   coord_equal() +
   theme_minimal() +
   scale_color_gradientn(colours = lidR::height.colors(50)) +
-  geom_vline(xintercept = min(df$s[df$classified == "yes"])) +
-  geom_vline(xintercept = max(df$s[df$classified == "yes"]))
+  geom_vline(xintercept = h_min) +
+  geom_vline(xintercept = h_max)
 
 
-## transects ------
 
-las_tr <- lidR::clip_transect(l,
-                              c(xm1, ym1),
-                              c(xm2, ym2),
-                              width = 4, xz = TRUE)
-
-
-las_tr@data
-
-library(ggplot2)
-ggplot(y@data, aes(X, Y, color = Intensity)) +
-  geom_point(size = 0.5) +
-  coord_equal() +
-  theme_minimal() +
-  scale_color_gradientn(colours = lidR::height.colors(50))
-
-
+# to poniżej to chłam z przeszłości, może się wykorzysta -----
 
 # sample points -----------------------------------------------------------
 

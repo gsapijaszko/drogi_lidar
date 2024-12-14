@@ -340,9 +340,8 @@ h_min <- min(df$s[df$road_surface == "yes"])
 h_max <- max(df$s[df$road_surface == "yes"])
 h_width <- abs(h_min) + abs(h_max)
 
-abs(h_max) - (abs(h_min) + abs(h_max))/2
 
-message("Szerokość drogi = ", abs(min(df$s[df$classified == "yes"])) + abs(max(df$s[df$classified == "yes"])), " m")
+message("Szerokość drogi = ", abs(h_min) + abs(h_max), " m")
 
 ggplot(y@data, aes(X, Y, color = Intensity)) +
   geom_point(size = 0.5) +
@@ -540,3 +539,6 @@ y <- c(0.01, 0.01)
 x%*%y
 norm(y, "2")
 ALSroads:::angle(x, y)
+
+
+

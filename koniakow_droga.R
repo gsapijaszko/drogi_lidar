@@ -203,8 +203,15 @@ ymax <- max(p1[2], p2[2])
 #' alpha in radians
 alpha <- atan(dy/dx)
 
-xm <- p1[1] + ll * cos(alpha) / 2
-ym <- p1[2] + ll * sin(alpha) / 2
+if(dx >= 0L & dy < 0L) {
+  xm <- p1[1] + ll * cos(alpha) / 2
+  ym <- p1[2] + ll * sin(alpha) / 2
+} else if(dx < 0L & dy >= 0L){
+  xm <- p1[1] - ll * cos(alpha) / 2
+  ym <- p1[2] - ll * sin(alpha) / 2
+}
+  
+
 
 pm <- sf::st_sfc(sf::st_point(c(xm, ym)), crs = "EPSG:2180")
 
